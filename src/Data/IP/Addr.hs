@@ -2,6 +2,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 -- | Internet Protocol addressing.
 module Data.IP.Addr (
@@ -19,7 +20,7 @@ module Data.IP.Addr (
     Inet4Addr
   ) where
 
-import Data.Typeable (Typeable)
+import Data.Typeable (Typeable, Typeable1)
 import Data.Word
 import Data.Bits
 import Data.Ix (Ix)
@@ -62,7 +63,8 @@ data NetAddr a = NetAddr { netPrefix ∷ a
                          , netMask   ∷ a
                          , netLength ∷ {-# UNPACK #-} !Word
                          }
-                 deriving (Typeable)
+
+deriving instance Typeable1 NetAddr
 
 type Net4Addr = NetAddr IP4
 
@@ -99,7 +101,9 @@ instance Storable InetPort where
   poke p      = poke (castPtr p) . toBigEndian . unInetPort
 
 -- | Socket address: IP address + port number.
-data InetAddr a = InetAddr a InetPort
+data InetAddr a = InetAddr a InetPort deriving (Eq, Show)
+
+deriving instance Typeable1 InetAddr
 
 type Inet4Addr = InetAddr IP4
 
