@@ -6,6 +6,9 @@ Synopsis: Internet Protocol data structures
 Description:
   This package provides Internet Protocol data structures
 
+Homepage: https://github.com/mvv/data-ip
+Bug-Reports: https://github.com/mvv/data-ip/issues
+
 Author: Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
 Maintainer: Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
 Copyright: 2011 Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
