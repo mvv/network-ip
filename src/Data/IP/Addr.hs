@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 -- | Internet Protocol addressing.
 module Data.IP.Addr (
@@ -91,8 +92,7 @@ newtype InetPort = InetPort { unInetPort ∷ Word16 }
                              Num, Real, Integral, Bits)
 
 instance Show InetPort where
-  showsPrec d (InetPort p) = showParen (d > 10) $
-    showString "InetPort " . showsPrec 11 p
+  show (InetPort p) = show p
 
 instance Storable InetPort where
   alignment _ = alignment (undefined ∷ Word16)
@@ -101,9 +101,12 @@ instance Storable InetPort where
   poke p      = poke (castPtr p) . toBigEndian . unInetPort
 
 -- | Socket address: IP address + port number.
-data InetAddr a = InetAddr a InetPort deriving (Eq, Show)
+data InetAddr a = InetAddr a InetPort deriving Eq
 
 deriving instance Typeable1 InetAddr
 
 type Inet4Addr = InetAddr IP4
+
+instance Show Inet4Addr where
+  show (InetAddr a p) = show a ++ ":" ++ show p
 
