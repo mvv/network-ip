@@ -10,6 +10,7 @@
 module Data.IP.Addr (
     IP4(..),
     ip4ToOctets,
+    ip4FromOctets,
     anyIP4,
     NetAddr,
     Net4Addr,
@@ -29,13 +30,15 @@ import Data.Ix (Ix)
 import Data.List (intercalate)
 import Data.Endian
 import Data.Default
-import Control.Applicative ((<$>))
+import Data.Hashable
+import Data.Pointed
+import Data.Functor.Plus
 import Foreign.Ptr (castPtr)
 import Foreign.Storable (Storable(..))
 
 -- | IPv4 address.
 newtype IP4 = IP4 { unIP4 ∷ Word32 }
-              deriving (Typeable, Eq, Ord, Bounded, Enum, Ix, Num, Bits)
+  deriving (Typeable, Eq, Ord, Bounded, Enum, Ix, Num, Bits, Hashable)
 
 instance Show IP4 where
   show = intercalate "." . (show <$>) . ip4ToOctets
@@ -50,6 +53,15 @@ instance Storable IP4 where
 ip4ToOctets ∷ IP4 → [Word8]
 ip4ToOctets (IP4 w) = fromIntegral <$>
                         [w `shiftR` 24, w `shiftR` 16, w `shiftR` 8, w]
+
+-- | Create an IPv4 address from four octets.
+ip4FromOctets ∷ (Pointed f, Plus f) ⇒ [Word8] → f IP4
+ip4FromOctets [o1, o2, o3, o4] =
+  point $ IP4 $  fromIntegral o1 `shiftL` 24
+             .|. fromIntegral o2 `shiftL` 16
+             .|. fromIntegral o3 `shiftL` 8
+             .|. fromIntegral o4
+ip4FromOctets _ = zero
 
 -- | IPv4 address @0.0.0.0@.
 anyIP4 ∷ IP4
@@ -89,8 +101,8 @@ mkNetAddr addr' len' = NetAddr addr mask len
 
 -- | Port number.
 newtype InetPort = InetPort { unInetPort ∷ Word16 }
-                   deriving (Typeable, Eq, Ord, Bounded, Enum, Ix,
-                             Num, Real, Integral, Bits)
+  deriving (Typeable, Eq, Ord, Bounded, Enum, Ix, Num, Real, Integral, Bits,
+            Hashable)
 
 instance Show InetPort where
   show (InetPort p) = show p
@@ -110,4 +122,7 @@ type Inet4Addr = InetAddr IP4
 
 instance Show Inet4Addr where
   show (InetAddr a p) = show a ++ ":" ++ show p
+
+instance Hashable Inet4Addr where
+  hash (InetAddr a p) = hash a `combine` hash p
 
