@@ -33,6 +33,11 @@ import Data.Default
 import Data.Hashable
 import Data.Pointed
 import Data.Functor.Plus
+import Data.Binary (Binary)
+import qualified Data.Binary as B
+import Data.Serialize (Serialize)
+import qualified Data.Serialize as S
+import Control.Applicative
 import Foreign.Ptr (castPtr)
 import Foreign.Storable (Storable(..))
 
@@ -48,6 +53,14 @@ instance Storable IP4 where
   sizeOf _    = 4
   peek p      = IP4 . fromBigEndian <$> peek (castPtr p)
   poke p      = poke (castPtr p) . toBigEndian . unIP4
+
+instance Binary IP4 where
+  get = IP4 . fromBigEndian <$> B.get
+  put = B.put . toBigEndian . unIP4
+
+instance Serialize IP4 where
+  get = IP4 . fromBigEndian <$> S.get
+  put = S.put . toBigEndian . unIP4
 
 -- | Convert an IPv4 address to a list of octets.
 ip4ToOctets ∷ IP4 → [Word8]
@@ -113,6 +126,14 @@ instance Storable InetPort where
   peek p      = InetPort . fromBigEndian <$> peek (castPtr p)
   poke p      = poke (castPtr p) . toBigEndian . unInetPort
 
+instance Binary InetPort where
+  get = InetPort . fromBigEndian <$> B.get
+  put = B.put . toBigEndian . unInetPort
+
+instance Serialize InetPort where
+  get = InetPort . fromBigEndian <$> S.get
+  put = S.put . toBigEndian . unInetPort
+
 -- | Socket address: IP address + port number.
 data InetAddr a = InetAddr a InetPort deriving Eq
 
@@ -125,4 +146,12 @@ instance Show Inet4Addr where
 
 instance Hashable Inet4Addr where
   hash (InetAddr a p) = hash a `combine` hash p
+
+instance Binary a ⇒ Binary (InetAddr a) where
+  get = InetAddr <$> B.get <*> B.get
+  put (InetAddr a p) = B.put a >> B.put p
+
+instance Serialize a ⇒ Serialize (InetAddr a) where
+  get = InetAddr <$> S.get <*> S.get
+  put (InetAddr a p) = S.put a >> S.put p
 
