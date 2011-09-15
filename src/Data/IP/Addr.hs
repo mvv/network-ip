@@ -11,6 +11,7 @@ module Data.IP.Addr (
     IP4(..),
     ip4ToOctets,
     ip4FromOctets,
+    ip4FromString,
     anyIP4,
     NetAddr,
     Net4Addr,
@@ -26,6 +27,7 @@ module Data.IP.Addr (
 import Data.Typeable (Typeable, Typeable1)
 import Data.Word
 import Data.Bits
+import Data.Char (ord)
 import Data.Ix (Ix)
 import Data.List (intercalate)
 import Data.Endian
@@ -38,6 +40,7 @@ import qualified Data.Binary as B
 import Data.Serialize (Serialize)
 import qualified Data.Serialize as S
 import Control.Applicative
+import Control.Monad (join)
 import Foreign.Ptr (castPtr)
 import Foreign.Storable (Storable(..))
 
@@ -75,6 +78,39 @@ ip4FromOctets [o1, o2, o3, o4] =
              .|. fromIntegral o3 `shiftL` 8
              .|. fromIntegral o4
 ip4FromOctets _ = zero
+
+splitOn ∷ Char → String → [String]
+splitOn c s = go s [] []
+  where go []      [] [] = []
+        go []      r  [] = [reverse r]
+        go []      r  rs = reverse (reverse r : rs)
+        go (h : t) r  rs =
+          if h == c
+            then go t [] (reverse r : rs)
+            else go t (h : r) rs
+
+-- | Read an IPv4 address written in dot-decimal notation.
+ip4FromString ∷ (Pointed f, Plus f) ⇒ String → f IP4
+ip4FromString = maybe zero point
+              . join
+              . fmap ip4FromOctets 
+              . sequence
+              . fmap octet
+              . splitOn '.'
+  where
+    octet [d1]
+      | d1 >= '0' && d1 <= '9'
+      = Just $ fromIntegral $ ord d1 - ord '0'
+    octet [d1, d2]
+      | d1 >= '1' && d1 <= '9' && d2 >= '0' && d2 <= '9'
+      = Just $ fromIntegral $ (ord d1 - ord '0') * 10 + (ord d2 - ord '0')
+    octet [d1, d2, d3]
+      | d1 >= '1' && d1 <= '9' && d2 >= '0' && d2 <= '9' &&
+        d3 >= '0' && d3 <= '9'
+      = let i = (ord d1 - ord '0') * 100 + (ord d2 - ord '0') * 10 +
+                (ord d3 - ord '0') in
+        if i > 255 then Nothing else Just (fromIntegral i)
+    octet _ = Nothing
 
 -- | IPv4 address @0.0.0.0@.
 anyIP4 ∷ IP4
