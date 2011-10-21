@@ -129,8 +129,6 @@ data NetAddr a = NetAddr { netPrefix ∷ a
 
 deriving instance Typeable1 NetAddr
 
-type Net4Addr = NetAddr IP4
-
 instance Eq a ⇒ Eq (NetAddr a) where
   (NetAddr addr1 _ len1) == (NetAddr addr2 _ len2) = len1 == len2 &&
                                                      addr1 == addr2
@@ -138,6 +136,12 @@ instance Eq a ⇒ Eq (NetAddr a) where
 
 instance Show a ⇒ Show (NetAddr a) where
   show (NetAddr a _ n) = show a ++ "/" ++ show n
+
+type Net4Addr = NetAddr IP4
+
+instance Default Net4Addr where
+  def = NetAddr def def 0
+  {-# INLINE def #-}
 
 -- | Make network address from IP address and routing prefix length.
 mkNetAddr ∷ Bits a ⇒ a → Word → NetAddr a
