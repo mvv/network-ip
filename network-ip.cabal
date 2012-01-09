@@ -1,4 +1,4 @@
-Name: data-ip
+Name: network-ip
 Version: 0.0.1
 Category: Network
 Stability: experimental
@@ -6,12 +6,12 @@ Synopsis: Internet Protocol data structures
 Description:
   This package provides Internet Protocol data structures
 
-Homepage: https://github.com/mvv/data-ip
-Bug-Reports: https://github.com/mvv/data-ip/issues
+Homepage: https://github.com/mvv/network-ip
+Bug-Reports: https://github.com/mvv/network-ip/issues
 
 Author: Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
 Maintainer: Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
-Copyright: 2011 Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
+Copyright: 2011, 2012 Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
 License: BSD3
 License-File: LICENSE
 
@@ -20,7 +20,7 @@ Build-Type: Simple
 
 Source-Repository head
   Type: git
-  Location: https://github.com/mvv/data-ip.git
+  Location: https://github.com/mvv/network-ip.git
 
 Library
   Build-Depends:
@@ -34,5 +34,5 @@ Library
   Hs-Source-Dirs: src
   GHC-Options: -Wall
   Exposed-Modules:
-    Data.IP.Addr
+    Network.IP.Addr
 

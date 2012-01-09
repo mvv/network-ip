@@ -1,5 +1,5 @@
-Data-IP
-===========
+Network-IP
+==========
 This package provides Internet Protocol data structures.
 
 Installation

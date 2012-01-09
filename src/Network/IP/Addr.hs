@@ -7,7 +7,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 -- | Internet Protocol addressing.
-module Data.IP.Addr
+module Network.IP.Addr
   ( IP4(..)
   , ip4ToOctets
   , ip4FromOctets
