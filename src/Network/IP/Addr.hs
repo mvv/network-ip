@@ -127,11 +127,35 @@ instance Default IP4 where
   {-# INLINE def #-}
 
 -- | IPv6 address.
-newtype IP6 = IP6 Word128
+newtype IP6 = IP6 { unIP6 ∷ Word128 }
   deriving (Typeable, Eq, Ord, Bounded, Enum, Ix, Num, Bits, Hashable)
 
 instance Show IP6 where
   show = undefined
+
+instance Storable IP6 where
+  alignment _ = alignment (undefined ∷ Word64)
+  sizeOf _    = 16
+  peek p      = fmap IP6
+              $ fromHiAndLo <$> (fromBigEndian <$> peek (castPtr p))
+                            <*> (fromBigEndian <$> peek (castPtr p))
+  poke p (IP6 w) = do
+    poke (castPtr p) $ toBigEndian $ hiWord w
+    poke (castPtr p) $ toBigEndian $ loWord w
+
+instance Binary IP6 where
+  get = fmap IP6
+      $ fromHiAndLo <$> fmap fromBigEndian B.get <*> fmap fromBigEndian B.get
+  put (IP6 w) = do
+    B.put $ toBigEndian $ hiWord w
+    B.put $ toBigEndian $ loWord w
+
+instance Serialize IP6 where
+  get = fmap IP6
+      $ fromHiAndLo <$> fmap fromBigEndian S.get <*> fmap fromBigEndian S.get
+  put (IP6 w) = do
+    S.put $ toBigEndian $ hiWord w
+    S.put $ toBigEndian $ loWord w
 
 -- | Convert an IPv6 address to a list of 16-bit words.
 ip6ToWords ∷ IP6 → [Word16]
