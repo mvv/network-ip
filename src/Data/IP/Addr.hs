@@ -7,34 +7,40 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 -- | Internet Protocol addressing.
-module Data.IP.Addr (
-    IP4(..),
-    ip4ToOctets,
-    ip4FromOctets,
-    ip4FromString,
-    anyIP4,
-    NetAddr,
-    Net4Addr,
-    netPrefix,
-    netMask,
-    netLength,
-    mkNetAddr,
-    InetPort(..),
-    InetAddr(..),
-    Inet4Addr
+module Data.IP.Addr
+  ( IP4(..)
+  , ip4ToOctets
+  , ip4FromOctets
+  , ip4FromString
+  , anyIP4
+  , IP6(..)
+  , ip6ToWords
+  , ip6FromWords
+  , anyIP6
+  , IP(..)
+  , NetAddr
+  , Net4Addr
+  , Net6Addr
+  , netPrefix
+  , netMask
+  , netLength
+  , mkNetAddr
+  , InetPort(..)
+  , InetAddr(..)
+  , Inet4Addr
+  , Inet6Addr
   ) where
 
 import Data.Typeable (Typeable, Typeable1)
 import Data.Word
 import Data.Bits
+import Data.DoubleWord (DoubleWord(..), Word128)
 import Data.Char (ord)
 import Data.Ix (Ix)
 import Data.List (intercalate)
 import Data.Endian
 import Data.Default
 import Data.Hashable
-import Data.Pointed
-import Data.Functor.Plus
 import Data.Binary (Binary)
 import qualified Data.Binary as B
 import Data.Serialize (Serialize)
@@ -71,13 +77,13 @@ ip4ToOctets (IP4 w) = fromIntegral <$>
                         [w `shiftR` 24, w `shiftR` 16, w `shiftR` 8, w]
 
 -- | Create an IPv4 address from four octets.
-ip4FromOctets ∷ (Pointed f, Plus f) ⇒ [Word8] → f IP4
+ip4FromOctets ∷ [Word8] → Maybe IP4
 ip4FromOctets [o1, o2, o3, o4] =
-  point $ IP4 $  fromIntegral o1 `shiftL` 24
+  Just $ IP4  $  fromIntegral o1 `shiftL` 24
              .|. fromIntegral o2 `shiftL` 16
              .|. fromIntegral o3 `shiftL` 8
              .|. fromIntegral o4
-ip4FromOctets _ = zero
+ip4FromOctets _ = Nothing
 
 splitOn ∷ Char → String → [String]
 splitOn c s = go s [] []
@@ -90,9 +96,8 @@ splitOn c s = go s [] []
             else go t (h : r) rs
 
 -- | Read an IPv4 address written in dot-decimal notation.
-ip4FromString ∷ (Pointed f, Plus f) ⇒ String → f IP4
-ip4FromString = maybe zero point
-              . join
+ip4FromString ∷ String → Maybe IP4
+ip4FromString = join
               . fmap ip4FromOctets 
               . sequence
               . fmap octet
@@ -121,6 +126,51 @@ instance Default IP4 where
   def = anyIP4
   {-# INLINE def #-}
 
+-- | IPv6 address.
+newtype IP6 = IP6 Word128
+  deriving (Typeable, Eq, Ord, Bounded, Enum, Ix, Num, Bits, Hashable)
+
+instance Show IP6 where
+  show = undefined
+
+-- | Convert an IPv6 address to a list of 16-bit words.
+ip6ToWords ∷ IP6 → [Word16]
+ip6ToWords (IP6 w) = fromIntegral <$>
+    [hi `shiftR` 48, hi `shiftR` 32, hi `shiftR` 16, hi,
+     lo `shiftR` 48, lo `shiftR` 32, lo `shiftR` 16, lo]
+  where hi = hiWord w
+        lo = loWord w
+
+-- | Create an IPv6 address from eight 16-bit words.
+ip6FromWords ∷ [Word16] → Maybe IP6
+ip6FromWords [w1, w2, w3, w4, w5, w6, w7, w8] = Just $ IP6 $ fromHiAndLo hi lo
+  where hi  =  fromIntegral w1 `shiftL` 48
+           .|. fromIntegral w2 `shiftL` 32
+           .|. fromIntegral w3 `shiftL` 16
+           .|. fromIntegral w4
+        lo  =  fromIntegral w5 `shiftL` 48
+           .|. fromIntegral w6 `shiftL` 32
+           .|. fromIntegral w7 `shiftL` 16
+           .|. fromIntegral w8
+ip6FromWords _ = Nothing
+
+-- | IPv6 address @::@.
+anyIP6 ∷ IP6
+anyIP6 = IP6 0
+{-# INLINE anyIP6 #-}
+
+instance Default IP6 where
+  def = anyIP6
+  {-# INLINE def #-}
+
+data IP = IPv4 {-# UNPACK #-} !IP4
+        | IPv6 {-# UNPACK #-} !IP6
+        deriving (Typeable, Eq, Ord)
+
+instance Show IP where
+  show (IPv4 addr) = show addr
+  show (IPv6 addr) = show addr
+
 -- | Network address. Both mask and its length are stored for efficiency.
 data NetAddr a = NetAddr { netPrefix ∷ a
                          , netMask   ∷ a
@@ -138,9 +188,14 @@ instance Show a ⇒ Show (NetAddr a) where
   show (NetAddr a _ n) = show a ++ "/" ++ show n
 
 type Net4Addr = NetAddr IP4
+type Net6Addr = NetAddr IP6
 
 instance Default Net4Addr where
-  def = NetAddr def def 0
+  def = NetAddr anyIP4 anyIP4 0
+  {-# INLINE def #-}
+
+instance Default Net6Addr where
+  def = NetAddr anyIP6 anyIP6 0
   {-# INLINE def #-}
 
 -- | Make network address from IP address and routing prefix length.
@@ -175,16 +230,26 @@ instance Serialize InetPort where
   put = S.put . toBigEndian . unInetPort
 
 -- | Socket address: IP address + port number.
-data InetAddr a = InetAddr a InetPort deriving Eq
+data InetAddr a = InetAddr { inetAddr ∷ a
+                           , inetPort ∷ {-# UNPACK #-} !InetPort
+                           } deriving (Eq, Ord)
 
 deriving instance Typeable1 InetAddr
 
 type Inet4Addr = InetAddr IP4
+type Inet6Addr = InetAddr IP6
 
 instance Show Inet4Addr where
   show (InetAddr a p) = show a ++ ":" ++ show p
 
-instance Hashable Inet4Addr where
+instance Show Inet6Addr where
+  show (InetAddr a p) = "[" ++ show a ++ "]:" ++ show p
+
+instance Show (InetAddr IP) where
+  show (InetAddr (IPv4 a) p) = show $ InetAddr a p
+  show (InetAddr (IPv6 a) p) = show $ InetAddr a p
+
+instance Hashable a ⇒ Hashable (InetAddr a) where
   hash (InetAddr a p) = hash a `combine` hash p
 
 instance Binary a ⇒ Binary (InetAddr a) where
