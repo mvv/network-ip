@@ -52,7 +52,8 @@ import Foreign.Storable (Storable(..))
 
 -- | IPv4 address.
 newtype IP4 = IP4 { unIP4 ∷ Word32 }
-  deriving (Typeable, Eq, Ord, Bounded, Enum, Ix, Num, Bits, Hashable)
+  deriving (Typeable, Eq, Ord, Bounded, Enum, Ix, Num, Bits, Hashable,
+            Binary, Serialize)
 
 instance Show IP4 where
   show = intercalate "." . (show <$>) . ip4ToOctets
@@ -62,14 +63,6 @@ instance Storable IP4 where
   sizeOf _    = 4
   peek p      = IP4 . fromBigEndian <$> peek (castPtr p)
   poke p      = poke (castPtr p) . toBigEndian . unIP4
-
-instance Binary IP4 where
-  get = IP4 . fromBigEndian <$> B.get
-  put = B.put . toBigEndian . unIP4
-
-instance Serialize IP4 where
-  get = IP4 . fromBigEndian <$> S.get
-  put = S.put . toBigEndian . unIP4
 
 -- | Convert an IPv4 address to a list of octets.
 ip4ToOctets ∷ IP4 → [Word8]
@@ -144,18 +137,16 @@ instance Storable IP6 where
     poke (castPtr p) $ toBigEndian $ loWord w
 
 instance Binary IP6 where
-  get = fmap IP6
-      $ fromHiAndLo <$> fmap fromBigEndian B.get <*> fmap fromBigEndian B.get
+  get = fmap IP6 $ fromHiAndLo <$> B.get <*> B.get
   put (IP6 w) = do
-    B.put $ toBigEndian $ hiWord w
-    B.put $ toBigEndian $ loWord w
+    B.put $ hiWord w
+    B.put $ loWord w
 
 instance Serialize IP6 where
-  get = fmap IP6
-      $ fromHiAndLo <$> fmap fromBigEndian S.get <*> fmap fromBigEndian S.get
+  get = fmap IP6 $ fromHiAndLo <$> S.get <*> S.get
   put (IP6 w) = do
-    S.put $ toBigEndian $ hiWord w
-    S.put $ toBigEndian $ loWord w
+    S.put $ hiWord w
+    S.put $ loWord w
 
 -- | Convert an IPv6 address to a list of 16-bit words.
 ip6ToWords ∷ IP6 → [Word16]
