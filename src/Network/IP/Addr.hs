@@ -214,7 +214,7 @@ instance Default Net6Addr where
   {-# INLINE def #-}
 
 -- | Make network address from IP address and routing prefix length.
-mkNetAddr ∷ Bits a ⇒ a → Word → NetAddr a
+mkNetAddr ∷ (Num a, Bits a) ⇒ a → Word → NetAddr a
 mkNetAddr addr' len' = NetAddr addr mask len
   where bits = fromIntegral $ bitSize addr'
         len  = min len' bits
