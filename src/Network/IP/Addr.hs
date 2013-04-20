@@ -40,9 +40,11 @@ module Network.IP.Addr
   , Net4Addr
   , Net6Addr
   , NetAddr
+  , aNetAddr
+  , aNetAddrOf
   , aNet4Addr
   , aNet6Addr
-  , aNetAddr
+  , aNetAddrIP
   , printNetAddr
   , net4Parser
   , net6Parser
@@ -54,9 +56,11 @@ module Network.IP.Addr
   , InetAddr(..)
   , Inet4Addr
   , Inet6Addr
+  , anInetAddr
+  , anInetAddrOf
   , anInet4Addr
   , anInet6Addr
-  , anInetAddr
+  , anInetAddrIP
   ) where
 
 import Prelude hiding (print)
@@ -388,6 +392,14 @@ data NetAddr a = NetAddr a {-# UNPACK #-} !Word8
 type Net4Addr = NetAddr IP4
 type Net6Addr = NetAddr IP6
 
+-- | 'NetAddr' proxy value.
+aNetAddr ∷ Proxy NetAddr
+aNetAddr = Proxy
+
+-- | 'NetAddr' /a/ proxy value.
+aNetAddrOf ∷ Proxy a → Proxy (NetAddr a)
+aNetAddrOf _ = Proxy
+
 -- | 'Net4Addr' proxy value.
 aNet4Addr ∷ Proxy Net4Addr
 aNet4Addr = Proxy
@@ -397,8 +409,8 @@ aNet6Addr ∷ Proxy Net6Addr
 aNet6Addr = Proxy
 
 -- | 'NetAddr' 'IP' proxy value.
-aNetAddr ∷ Proxy (NetAddr IP)
-aNetAddr = Proxy
+aNetAddrIP ∷ Proxy (NetAddr IP)
+aNetAddrIP = Proxy
 
 instance Show a ⇒ Show (NetAddr a) where
   showsPrec p (NetAddr a w) = showParen (p > 10)
@@ -584,6 +596,14 @@ deriving instance Typeable1 InetAddr
 type Inet4Addr = InetAddr IP4
 type Inet6Addr = InetAddr IP6
 
+-- | 'InetAddr' proxy value.
+anInetAddr ∷ Proxy (InetAddr IP)
+anInetAddr = Proxy
+
+-- | 'InetAddr' /a/ proxy value.
+anInetAddrOf ∷ Proxy a → Proxy (InetAddr a)
+anInetAddrOf _ = Proxy
+
 -- | 'Inet4Addr' proxy value.
 anInet4Addr ∷ Proxy Inet4Addr
 anInet4Addr = Proxy
@@ -593,8 +613,8 @@ anInet6Addr ∷ Proxy Inet6Addr
 anInet6Addr = Proxy
 
 -- | 'InetAddr' 'IP' proxy value.
-anInetAddr ∷ Proxy (InetAddr IP)
-anInetAddr = Proxy
+anInetAddrIP ∷ Proxy (InetAddr IP)
+anInetAddrIP = Proxy
 
 instance Functor InetAddr where
   fmap f (InetAddr a p) = InetAddr (f a) p
