@@ -54,7 +54,9 @@ instance Arbitrary a ⇒ Arbitrary (InetAddr a) where
 
 main = defaultMain
          [ testGroup "IP4"
-             [ testProperty "print -> parse" $ \a →
+             [ testProperty "show -> read" $ \a →
+                 read (show a) == (a ∷ IP4)
+             , testProperty "print -> parse" $ \a →
                  fromString (toString a) == Just (a ∷ IP4)
              , testProperty "parsing \"1.2.3.4\"" $
                  fromString "1.2.3.4" == Just (IP4 0x01020304)
@@ -80,7 +82,9 @@ main = defaultMain
                  fromStringAs anIP4 "1a.2.3.4" == Nothing
              ]
          , testGroup "IP6"
-             [ testProperty "print -> parse" $ \a →
+             [ testProperty "show -> read" $ \a →
+                 read (show a) == (a ∷ IP6)
+             , testProperty "print -> parse" $ \a →
                  fromString (toString a) == Just (a ∷ IP6)
              , testProperty "parsing \"::\"" $
                  fromString "::" == Just anyIP6
@@ -131,11 +135,15 @@ main = defaultMain
                  fromStringAs anIP6 "1:2:3:4:5:6:7:8g" == Nothing
              ]
          , testGroup "IP"
-             [ testProperty "print -> parse" $ \a →
+             [ testProperty "show -> read" $ \a →
+                 read (show a) == (a ∷ IP)
+             , testProperty "print -> parse" $ \a →
                  fromString (toString a) == Just (a ∷ IP)
              ]
          , testGroup "Net4Addr"
-             [ testProperty "print -> parse" $ \n →
+             [ testProperty "show -> read" $ \n →
+                 read (show n) == (n ∷ Net4Addr)
+             , testProperty "print -> parse" $ \n →
                  fromString (toString n) == Just (n ∷ Net4Addr)
              , testProperty "parsing \"11.22.33.44/14\"" $
                  case fromStringAs aNet4Addr "11.22.33.44/14" of
@@ -162,7 +170,9 @@ main = defaultMain
                  fromStringAs aNet4Addr "1.2.3.4/012" == Nothing
              ]
          , testGroup "Net6Addr"
-             [ testProperty "print -> parse" $ \n →
+             [ testProperty "show -> read" $ \n →
+                 read (show n) == (n ∷ Net6Addr)
+             , testProperty "print -> parse" $ \n →
                  fromString (toString n) == Just (n ∷ Net6Addr)
              , testProperty "parsing \"1234:5678:9abc:def::/22\"" $
                  case fromStringAs aNet6Addr "1234:5678:9abc:def::/22" of
@@ -189,11 +199,15 @@ main = defaultMain
                  fromStringAs aNet6Addr "::/01" == Nothing
              ]
          , testGroup "NetAddr"
-             [ testProperty "print -> parse" $ \n →
+             [ testProperty "show -> read" $ \n →
+                 read (show n) == (n ∷ NetAddr IP)
+             , testProperty "print -> parse" $ \n →
                  fromString (toString n) == Just (n ∷ NetAddr IP)
              ]
          , testGroup "InetPort"
-             [ testProperty "print -> parse" $ \p →
+             [ testProperty "show -> read" $ \p →
+                 read (show p) == (p ∷ InetPort)
+             , testProperty "print -> parse" $ \p →
                  fromString (toString p) == Just (p ∷ InetPort)
              , testProperty "parsing \"01\" fails" $
                  fromStringAs anInetPort "01" == Nothing
@@ -203,7 +217,9 @@ main = defaultMain
                  fromStringAs anInetPort "65536" == Nothing
              ]
          , testGroup "Inet4Addr"
-             [ testProperty "print -> parse" $ \a →
+             [ testProperty "show -> read" $ \a →
+                 read (show a) == (a ∷ Inet4Addr)
+             , testProperty "print -> parse" $ \a →
                  fromString (toString a) == Just (a ∷ Inet4Addr)
              , testProperty "parsing \"11.22.33.44:55\"" $
                  case fromString "11.22.33.44:55" of
@@ -211,7 +227,9 @@ main = defaultMain
                    _ → False
              ]
          , testGroup "Inet6Addr"
-             [ testProperty "print -> parse" $ \a →
+             [ testProperty "show -> read" $ \a →
+                 read (show a) == (a ∷ Inet6Addr)
+             , testProperty "print -> parse" $ \a →
                  fromString (toString a) == Just (a ∷ Inet6Addr)
              , testProperty "parsing \"[1234:5678:9abc:def::]:55\"" $
                  case fromString "[1234:5678:9abc:def::]:55" of
@@ -219,7 +237,9 @@ main = defaultMain
                    _ → False
              ]
          , testGroup "InetAddr"
-             [ testProperty "print -> parse" $ \a →
+             [ testProperty "show -> read" $ \a →
+                 read (show a) == (a ∷ InetAddr IP)
+             , testProperty "print -> parse" $ \a →
                  fromString (toString a) == Just (a ∷ InetAddr IP)
              ]
          ]

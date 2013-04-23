@@ -112,6 +112,15 @@ instance Show IP4 where
                 . showsPrec 11 o4
     where (o1, o2, o3, o4) = ip4ToOctets a
 
+instance Read IP4 where
+  readsPrec p = readParen (p > 10) $ \i → 
+                  [ (ip4FromOctets o1 o2 o3 o4, i4)
+                  | ("ip4FromOctets", i') ← lex i
+                  , (o1, i1) ← readsPrec 11 i'
+                  , (o2, i2) ← readsPrec 11 i1
+                  , (o3, i3) ← readsPrec 11 i2
+                  , (o4, i4) ← readsPrec 11 i3 ]
+
 instance Printable IP4 where
   print = P.fsep (P.char7 '.') . (P.nonNegative Decimal <$>) . ip4ToOctetList
   {-# INLINE print #-}
@@ -190,6 +199,19 @@ instance Show IP6 where
                w1 w2 w3 w4 w5 w6 w7 w8
     where
       (w1, w2, w3, w4, w5, w6, w7, w8) = ip6ToWords a
+
+instance Read IP6 where
+  readsPrec p = readParen (p > 10) $ \i → 
+                  [ (ip6FromWords w1 w2 w3 w4 w5 w6 w7 w8, i8)
+                  | ("ip6FromWords", i') ← lex i
+                  , (w1, i1) ← readsPrec 11 i'
+                  , (w2, i2) ← readsPrec 11 i1
+                  , (w3, i3) ← readsPrec 11 i2
+                  , (w4, i4) ← readsPrec 11 i3
+                  , (w5, i5) ← readsPrec 11 i4
+                  , (w6, i6) ← readsPrec 11 i5
+                  , (w7, i7) ← readsPrec 11 i6
+                  , (w8, i8) ← readsPrec 11 i7 ]
 
 instance Printable IP6 where
   print addr = case addrZeroes of
@@ -341,7 +363,7 @@ instance Default IP6 where
 -- IP address.
 data IP = IPv4 {-# UNPACK #-} !IP4
         | IPv6 {-# UNPACK #-} !IP6
-        deriving (Typeable, Eq, Ord, Show)
+        deriving (Typeable, Eq, Ord, Show, Read)
 
 -- | 'IP' proxy value.
 anIP ∷ Proxy IP
@@ -419,15 +441,36 @@ instance Show a ⇒ Show (NetAddr a) where
                             . showString " "
                             . showsPrec 11 w
 
+instance Read Net4Addr where
+  readsPrec p = readParen (p > 10) $ \i →
+                  [ (netAddr a w, i2)
+                  | ("netAddr", i') ← lex i
+                  , (a, i1) ← readsPrec 11 i'
+                  , (w, i2) ← readsPrec 11 i1 ]
+
+instance Read Net6Addr where
+  readsPrec p = readParen (p > 10) $ \i →
+                  [ (netAddr a w, i2)
+                  | ("netAddr", i') ← lex i
+                  , (a, i1) ← readsPrec 11 i'
+                  , (w, i2) ← readsPrec 11 i1 ]
+
+instance Read (NetAddr IP) where
+  readsPrec p = readParen (p > 10) $ \i →
+                  [ (netAddr a w, i2)
+                  | ("netAddr", i') ← lex i
+                  , (a, i1) ← readsPrec 11 i'
+                  , (w, i2) ← readsPrec 11 i1 ]
+
 instance Printable a ⇒ Printable (NetAddr a) where
   print (NetAddr a m) = print a <> P.char7 '/' <> print m
   {-# INLINE print #-}
 
-instance Textual (NetAddr IP4) where
+instance Textual Net4Addr where
   textual = net4Parser
   {-# INLINE textual #-}
 
-instance Textual (NetAddr IP6) where
+instance Textual Net6Addr where
   textual = net6Parser
   {-# INLINE textual #-}
 
@@ -574,8 +617,12 @@ anInetPort ∷ Proxy InetPort
 anInetPort = Proxy
 
 instance Show InetPort where
-  show (InetPort p) = show p
+  showsPrec p (InetPort w) = showsPrec p w
   {-# INLINE show #-}
+
+instance Read InetPort where
+  readsPrec p = fmap (\(w, s) → (InetPort w, s)) . readsPrec p
+  {-# INLINE readsPrec #-}
 
 instance Textual InetPort where
   textual = InetPort <$> nncBounded Decimal <?> "port number"
@@ -589,7 +636,7 @@ instance Storable InetPort where
 -- | Socket address: host address + port number.
 data InetAddr a = InetAddr { inetHost ∷ a
                            , inetPort ∷ {-# UNPACK #-} !InetPort
-                           } deriving (Eq, Ord, Show)
+                           } deriving (Eq, Ord, Show, Read)
 
 deriving instance Typeable1 InetAddr
 
