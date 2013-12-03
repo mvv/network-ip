@@ -24,6 +24,10 @@ module Network.IP.Addr
   , ip4FromOctets
   , ip4FromOctetList
   , anyIP4
+  , loopbackIP4
+  , broadcastIP4
+  , Range4(..)
+  , ip4Range
     -- ** IPv6 address
   , IP6(..)
   , anIP6
@@ -32,6 +36,9 @@ module Network.IP.Addr
   , ip6FromWords
   , ip6FromWordList
   , anyIP6
+  , loopbackIP6
+  , Range6(..)
+  , ip6Range
     -- ** IP address
   , IP(..)
   , anIP
@@ -182,6 +189,61 @@ anyIP4 = IP4 0
 instance Default IP4 where
   def = anyIP4
   {-# INLINE def #-}
+
+-- | IPv4 address @127.0.0.1@.
+loopbackIP4 ∷ IP4
+loopbackIP4 = IP4 0x7F000001
+{-# INLINE loopbackIP4 #-}
+
+-- | IPv4 address @255.255.255.255@.
+broadcastIP4 ∷ IP4
+broadcastIP4 = IP4 0xFFFFFFFF
+{-# INLINE broadcastIP4 #-}
+
+-- | IPv4 address range classification (per RFC6890).
+data Range4 = GeneralIP4       -- ^ General IPv4 address.
+            | ThisHostIP4      -- ^ This host on this network.
+            | PrivateUseIP4    -- ^ Private-Use networks.
+            | SharedSpaceIP4   -- ^ Shared address space.
+            | LoopbackIP4      -- ^ Loopback address.
+            | LinkLocalIP4     -- ^ Link local address.
+            | ReservedIP4      -- ^ Reserved address.
+            | DSLiteIP4        -- ^ Dual-Stack Lite.
+            | DocumentationIP4 -- ^ Reserved for documentation.
+            | IP6To4IP4        -- ^ 6to4.
+            | BenchmarkingIP4  -- ^ Benchmark testing.
+            | MulticastIP4     -- ^ Multicast address.
+            | FutureUseIP4     -- ^ Future use.
+            | BroadcastIP4     -- ^ Limited broadcast.
+            deriving (Typeable, Show, Read, Eq, Ord, Enum)
+
+-- | Determine the address range type.
+ip4Range ∷ IP4 → Range4
+ip4Range addr = case w1 of
+    0   → ThisHostIP4
+    10  → PrivateUseIP4
+    100 → if w2 .&. 0xC0 == 0x40 then SharedSpaceIP4 else GeneralIP4
+    127 → LoopbackIP4
+    169 → if w2 == 254 then LinkLocalIP4 else GeneralIP4
+    172 → if w2 .&. 0xF0 == 0x10 then PrivateUseIP4 else GeneralIP4
+    192 → case w2 of
+            0   → case w3 of
+                    0 → if w4 <= 7 then DSLiteIP4 else ReservedIP4
+                    2 → DocumentationIP4
+                    _ → GeneralIP4
+            18  → BenchmarkingIP4
+            19  → BenchmarkingIP4
+            51  → if w3 == 100 then DocumentationIP4 else GeneralIP4
+            88  → if w3 == 99 then IP6To4IP4 else GeneralIP4
+            168 → PrivateUseIP4
+            _   → GeneralIP4
+    203 → if w2 == 0 && w3 == 113 then DocumentationIP4 else GeneralIP4
+    _   | addr == broadcastIP4 → BroadcastIP4
+    _   → case w1 .&. 0xF0 of
+            224 → MulticastIP4
+            240 → FutureUseIP4
+            _   → GeneralIP4
+  where (w1, w2, w3, w4) = ip4ToOctets addr
 
 -- | IPv6 address.
 newtype IP6 = IP6 { unIP6 ∷ Word128 }
@@ -359,6 +421,60 @@ anyIP6 = IP6 0
 instance Default IP6 where
   def = anyIP6
   {-# INLINE def #-}
+
+-- | IPv6 address @::1@.
+loopbackIP6 ∷ IP6
+loopbackIP6 = IP6 1
+
+-- | IPv6 address range classification (per RFC6890).
+data Range6 = GeneralIP6       -- ^ General IPv6 address.
+            | AnyIP6           -- ^ Unspecified address.
+            | LoopbackIP6      -- ^ Loopback address.
+            | IP4MappedIP6     -- ^ Mapped IPv4 address.
+            | IP4EmbeddedIP6   -- ^ Embedded IPv4 address.
+            | DiscardIP6       -- ^ Discard address.
+            | ReservedIP6      -- ^ Reserved address.
+            | TeredoIP6        -- ^ Teredo address.
+            | BenchmarkingIP6  -- ^ Benchmark testing.
+            | DocumentationIP6 -- ^ Reserved for documentation.
+            | OrchidIP6        -- ^ ORCHID address.
+            | IP6To4IP6        -- ^ 6to4.
+            | UniqueLocalIP6   -- ^ Unique local address.
+            | LinkLocalIP6     -- ^ Link local address.
+            | MulticastIP6     -- ^ Multicast address.
+            deriving (Typeable, Show, Read, Eq, Ord, Enum)
+
+-- | Determine the address range type.
+ip6Range ∷ IP6 → Range6
+ip6Range (IP6 w) = case hi of
+    0 → case lo of
+          0 → AnyIP6
+          1 → LoopbackIP6
+          _ → GeneralIP6
+    0x000000000000FFFF → if q3 == 0 then IP4MappedIP6 else GeneralIP6
+    0x0064FF9B00000000 → if q3 == 0 then IP4EmbeddedIP6 else GeneralIP6
+    0x0100000000000000 → DiscardIP6
+    _                  → case w1 of
+      0x2001 → case w2 of
+                 0     → TeredoIP6
+                 2     → if w3 == 0 then BenchmarkingIP6 else GeneralIP6
+                 0xDB8 → DocumentationIP6
+                 _     | w2 .&. 0xFFF0 == 0x10 → OrchidIP6
+                       | w2 .&. 0xFE00 == 0    → ReservedIP6 
+                       | otherwise             → GeneralIP6
+      0x2002 → IP6To4IP6
+      _      | w1 .&. 0xFE00 == 0xFC00 → UniqueLocalIP6
+             | w1 .&. 0xFFC0 == 0xFE80 → LinkLocalIP6
+             | w1 >= 0xFF00            → MulticastIP6
+             | otherwise               → GeneralIP6
+  where hi = hiWord w
+        lo = loWord w
+        q1 = hiWord hi
+        q2 = loWord hi
+        q3 = hiWord lo
+        w1 = hiWord q1
+        w2 = loWord q1
+        w3 = hiWord q2
 
 -- IP address.
 data IP = IPv4 {-# UNPACK #-} !IP4
