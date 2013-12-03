@@ -644,7 +644,7 @@ type Inet4Addr = InetAddr IP4
 type Inet6Addr = InetAddr IP6
 
 -- | 'InetAddr' proxy value.
-anInetAddr ∷ Proxy (InetAddr IP)
+anInetAddr ∷ Proxy InetAddr
 anInetAddr = Proxy
 
 -- | 'InetAddr' /a/ proxy value.
