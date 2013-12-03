@@ -78,7 +78,7 @@ import Data.Bits
 import Data.DoubleWord (BinaryWord(..), DoubleWord(..), Word128)
 import Data.Ix (Ix)
 import Data.Endian
-import Data.Default
+import Data.Default.Class
 import Data.Hashable
 import Data.Binary (Binary)
 import qualified Data.Binary as B

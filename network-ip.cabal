@@ -26,7 +26,7 @@ Library
   Default-Language: Haskell2010
   Build-Depends:
     base         >= 4.3 && < 5,
-    data-default >= 0.2,
+    data-default-class,
     data-endian  >= 0.0.1,
     data-dword   >= 0.2,
     tagged       >= 0.2,
