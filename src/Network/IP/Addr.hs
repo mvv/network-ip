@@ -231,11 +231,13 @@ ip4Range addr = case w1 of
                     0 → if w4 <= 7 then DSLiteIP4 else ReservedIP4
                     2 → DocumentationIP4
                     _ → GeneralIP4
+            88  → if w3 == 99 then IP6To4IP4 else GeneralIP4
+            168 → PrivateUseIP4
+            _   → GeneralIP4
+    198 → case w2 of
             18  → BenchmarkingIP4
             19  → BenchmarkingIP4
             51  → if w3 == 100 then DocumentationIP4 else GeneralIP4
-            88  → if w3 == 99 then IP6To4IP4 else GeneralIP4
-            168 → PrivateUseIP4
             _   → GeneralIP4
     203 → if w2 == 0 && w3 == 113 then DocumentationIP4 else GeneralIP4
     _   | addr == broadcastIP4 → BroadcastIP4
