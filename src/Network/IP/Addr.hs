@@ -52,6 +52,8 @@ module Network.IP.Addr
   , aNet4Addr
   , aNet6Addr
   , aNetAddrIP
+  , net4Addr
+  , net6Addr
   , printNetAddr
   , net4Parser
   , net6Parser
@@ -524,6 +526,10 @@ class IsNetAddr n where
   netAddr   ∷ NetHost n -- ^ Host address
             → Word8     -- ^ Network prefix length
             → n
+  -- | Test if the address is in the network.
+  inNetwork ∷ NetHost n -- ^ Host address
+            → n         -- ^ Network address
+            → Bool
 
 -- | Network address: host address + network mask length.
 data NetAddr a = NetAddr a {-# UNPACK #-} !Word8
@@ -637,6 +643,9 @@ instance IsNetAddr Net4Addr where
   {-# INLINE netLength #-}
   netAddr a w = NetAddr a (w `min` 32)
   {-# INLINE netAddr #-}
+  inNetwork h (NetAddr a w) = h `shiftR` l == a `shiftR` l
+    where l = 32 - fromIntegral w
+  {-# INLINE inNetwork #-}
 
 instance IsNetAddr Net6Addr where
   type NetHost Net6Addr = IP6
@@ -655,6 +664,9 @@ instance IsNetAddr Net6Addr where
   {-# INLINE netLength #-}
   netAddr a w = NetAddr a (w `min` 128)
   {-# INLINE netAddr #-}
+  inNetwork h (NetAddr a w) = h `shiftR` l == a `shiftR` l
+    where l = 128 - fromIntegral w
+  {-# INLINE inNetwork #-}
 
 instance IsNetAddr (NetAddr IP) where
   type NetHost (NetAddr IP) = IP
@@ -684,6 +696,19 @@ instance IsNetAddr (NetAddr IP) where
                 IPv4 _ → 32
                 IPv6 _ → 128
   {-# INLINABLE netAddr #-}
+  inNetwork (IPv4 h) (NetAddr (IPv4 a) w) = h `shiftR` l == a `shiftR` l
+    where l = 32 - fromIntegral w
+  inNetwork (IPv6 h) (NetAddr (IPv6 a) w) = h `shiftR` l == a `shiftR` l
+    where l = 128 - fromIntegral w
+  inNetwork _ _ = False
+
+net4Addr ∷ IP4 → Word8 → Net4Addr
+net4Addr = netAddr
+{-# INLINE net4Addr #-}
+
+net6Addr ∷ IP6 → Word8 → Net6Addr
+net6Addr = netAddr
+{-# INLINE net6Addr #-}
 
 -- | Print network address (CIDR notation).
 printNetAddr ∷ (IsNetAddr n, Printable (NetHost n), Printer p) ⇒ n → p
