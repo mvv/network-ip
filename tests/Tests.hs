@@ -4,9 +4,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
-import Test.Framework (defaultMain, testGroup)
-import Test.Framework.Providers.QuickCheck2 (testProperty)
-import Test.QuickCheck
+import Test.Tasty (defaultMain, testGroup)
+import Test.Tasty.QuickCheck
 
 import Data.DoubleWord
 import Data.Textual
@@ -52,7 +51,7 @@ instance Arbitrary a ⇒ Arbitrary (InetAddr a) where
   arbitrary = InetAddr <$> arbitrary <*> arbitrary
   shrink n = uncurry InetAddr <$> shrink (inetHost n, inetPort n)
 
-main = defaultMain
+main = defaultMain $ testGroup "Tests"
          [ testGroup "IP4"
              [ testProperty "show -> read" $ \a →
                  read (show a) == (a ∷ IP4)

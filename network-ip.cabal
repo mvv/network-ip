@@ -45,10 +45,9 @@ Test-Suite tests
   Default-Language: Haskell2010
   Type: exitcode-stdio-1.0
   Build-Depends:
-    base                       >= 4 && < 5,
-    test-framework             >= 0.6,
-    test-framework-quickcheck2 >= 0.2,
-    QuickCheck                 >= 2.4,
+    base             >= 4 && < 5,
+    tasty            >= 0.4,
+    tasty-quickcheck >= 0.3,
     data-dword,
     text-printer,
     data-textual,
