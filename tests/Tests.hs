@@ -79,6 +79,66 @@ main = defaultMain $ testGroup "Tests"
                  fromStringAs anIP4 "1.2.3.4.5" == Nothing
              , testProperty "parsing \"1a.2.3.4\" fails" $
                  fromStringAs anIP4 "1a.2.3.4" == Nothing
+             , testProperty "0.1.2.3 is in the 'This host' range" $
+                 ip4Range (ip4FromOctets 0 1 2 3) == ThisHostIP4
+             , testProperty "10.1.2.3 is in the 'Private-Use' range" $
+                 ip4Range (ip4FromOctets 10 1 2 3) == PrivateUseIP4
+             , testProperty "100.64.1.2 is in the 'Shared address space' range" $
+                 ip4Range (ip4FromOctets 100 64 1 2) == SharedSpaceIP4
+             , testProperty "100.97.1.2 is in the 'Shared address space' range" $
+                 ip4Range (ip4FromOctets 100 97 1 2) == SharedSpaceIP4
+             , testProperty "100.128.1.2 is in the 'General' range" $
+                 ip4Range (ip4FromOctets 100 128 1 2) == GeneralIP4
+             , testProperty "127.0.0.1 is in the 'Loopback' range" $
+                 ip4Range loopbackIP4 == LoopbackIP4
+             , testProperty "169.254.0.1 is in the 'Link Local' range" $
+                 ip4Range (ip4FromOctets 169 254 0 1) == LinkLocalIP4
+             , testProperty "172.16.1.2 is in the 'Private-Use' range" $
+                 ip4Range (ip4FromOctets 172 16 1 2) == PrivateUseIP4
+             , testProperty "172.31.1.2 is in the 'Private-Use' range" $
+                 ip4Range (ip4FromOctets 172 31 1 2) == PrivateUseIP4
+             , testProperty "172.48.1.2 is in the 'General' range" $
+                 ip4Range (ip4FromOctets 172 48 1 2) == GeneralIP4
+             , testProperty "192.0.0.7 is in the 'DS-Lite' range" $
+                 ip4Range (ip4FromOctets 192 0 0 7) == DSLiteIP4
+             , testProperty "192.0.0.8 is in the 'Reserved' range" $
+                 ip4Range (ip4FromOctets 192 0 0 8) == ReservedIP4
+             , testProperty "192.0.2.1 is in the 'Documentation' range" $
+                 ip4Range (ip4FromOctets 192 0 2 1) == DocumentationIP4
+             , testProperty "192.88.99.1 is in the '6to4' range" $
+                 ip4Range (ip4FromOctets 192 88 99 1) == IP6To4IP4
+             , testProperty "192.168.1.2 is in the 'Private-Use' range" $
+                 ip4Range (ip4FromOctets 192 168 1 2) == PrivateUseIP4
+             , testProperty "198.18.1.2 is in the 'Benchmarking' range" $
+                 ip4Range (ip4FromOctets 198 18 1 2) == BenchmarkingIP4
+             , testProperty "198.19.1.2 is in the 'Benchmarking' range" $
+                 ip4Range (ip4FromOctets 198 19 1 2) == BenchmarkingIP4
+             , testProperty "198.20.1.2 is in the 'General' range" $
+                 ip4Range (ip4FromOctets 198 20 1 2) == GeneralIP4
+             , testProperty "198.51.100.1 is in the 'Documentation' range" $
+                 ip4Range (ip4FromOctets 198 51 100 1) == DocumentationIP4
+             , testProperty "198.51.101.1 is in the 'General' range" $
+                 ip4Range (ip4FromOctets 198 51 101 1) == GeneralIP4
+             , testProperty "198.52.100.1 is in the 'General' range" $
+                 ip4Range (ip4FromOctets 198 52 100 1) == GeneralIP4
+             , testProperty "203.0.113.1 is in the 'Documentation' range" $
+                 ip4Range (ip4FromOctets 203 0 113 1) == DocumentationIP4
+             , testProperty "203.0.114.1 is in the 'General' range" $
+                 ip4Range (ip4FromOctets 203 0 114 1) == GeneralIP4
+             , testProperty "203.1.113.1 is in the 'General' range" $
+                 ip4Range (ip4FromOctets 203 1 113 1) == GeneralIP4
+             , testProperty "224.1.2.3 is in the 'Multicast' range" $
+                 ip4Range (ip4FromOctets 224 1 2 3) == MulticastIP4
+             , testProperty "239.1.2.3 is in the 'Multicast' range" $
+                 ip4Range (ip4FromOctets 239 1 2 3) == MulticastIP4
+             , testProperty "223.1.2.3 is in the 'General' range" $
+                 ip4Range (ip4FromOctets 223 1 2 3) == GeneralIP4
+             , testProperty "240.1.2.3 is in the 'Future use' range" $
+                 ip4Range (ip4FromOctets 240 1 2 3) == FutureUseIP4
+             , testProperty "255.255.255.254 is in the 'Future use' range" $
+                 ip4Range (ip4FromOctets 255 255 255 254) == FutureUseIP4
+             , testProperty "255.255.255.255 is in the 'Broadcast' range" $
+                 ip4Range broadcastIP4 == BroadcastIP4
              ]
          , testGroup "IP6"
              [ testProperty "show -> read" $ \a →
@@ -132,6 +192,79 @@ main = defaultMain $ testGroup "Tests"
                  fromStringAs anIP6 "1:2::3:4:5g" == Nothing
              , testProperty "parsing \"1:2:3:4:5:6:7:8g\" fails" $
                  fromStringAs anIP6 "1:2:3:4:5:6:7:8g" == Nothing
+             , testProperty ":: is in the 'Unspecified' range" $
+                 ip6Range (IP6 0) == AnyIP6
+             , testProperty "::1 is in the 'Loopback' range" $
+                 ip6Range (IP6 1) == LoopbackIP6
+             , testProperty "::ffff:0:0:102:304 is in the 'IPv4 mapped' range" $
+                 ip6Range (ip6FromWords 0 0 0 0xFFFF 0 0 0x102 0x304) ==
+                   IP4MappedIP6
+             , testProperty "64:ff9b::102:304 is in the 'IPv4 embedded' range" $
+                 ip6Range (ip6FromWords 0x64 0xFF9B 0 0 0 0 0x102 0x304) ==
+                   IP4EmbeddedIP6
+             , testProperty "100::1:2:3:4 is in the 'Discard' range" $
+                 ip6Range (ip6FromWords 0x100 0 0 0 1 2 3 4) == DiscardIP6
+             , testProperty "100::1:2:3:4:5 is in the 'General' range" $
+                 ip6Range (ip6FromWords 0x100 0 0 1 2 3 4 5) == GeneralIP6
+             , testProperty "2001::ffff:1:2:3:4:5 is in the 'Teredo' range" $
+                 ip6Range (ip6FromWords 0x2001 0 0xFFFF 1 2 3 4 5) ==
+                   TeredoIP6
+             , testProperty "2001:2::0xFFFF:1:2:3:4 is in the 'Benchmarking' range" $
+                 ip6Range (ip6FromWords 0x2001 2 0 0xFFFF 1 2 3 4) ==
+                   BenchmarkingIP6
+             , testProperty "2001:2:1:2:3:4:5:6 is in the 'General' range" $
+                 ip6Range (ip6FromWords 0x2001 2 1 2 3 4 5 6) == GeneralIP6
+             , testProperty "2001:db8:0xFFFF:1:2:3:4:5 is in the 'Documentation' range" $
+                 ip6Range (ip6FromWords 0x2001 0xDB8 0xFFFF 1 2 3 4 5) ==
+                   DocumentationIP6
+             , testProperty "2001:db9:1:2:3:4:5:6 is in the 'General' range" $
+                 ip6Range (ip6FromWords 0x2001 0xDB9 1 2 3 4 5 6) ==
+                   GeneralIP6
+             , testProperty "2001:10:0xFFFF:1:2:3:4:5 is in the 'Orchid' range" $
+                 ip6Range (ip6FromWords 0x2001 0x10 0xFFFF 1 2 3 4 5) ==
+                   OrchidIP6
+             , testProperty "2001:18:1:2:3:4:5:6 is in the 'Orchid' range" $
+                 ip6Range (ip6FromWords 0x2001 0x18 1 2 3 4 5 6) ==
+                   OrchidIP6
+             , testProperty "2001:100:1:2:3:4:5:6 is in the 'Reserved' range" $
+                 ip6Range (ip6FromWords 0x2001 0x100 1 2 3 4 5 6) ==
+                   ReservedIP6
+             , testProperty "2001:200:1:2:3:4:5:6 is in the 'General' range" $
+                 ip6Range (ip6FromWords 0x2001 0x200 1 2 3 4 5 6) ==
+                   GeneralIP6
+             , testProperty "2002::1:2:3:4:5:6 is in the '6to4' range" $
+                 ip6Range (ip6FromWords 0x2002 0 1 2 3 4 5 6) ==
+                   IP6To4IP6
+             , testProperty "2002:ffff:1:2:3:4:5:6 is in the '6to4' range" $
+                 ip6Range (ip6FromWords 0x2002 0xFFFF 1 2 3 4 5 6) ==
+                   IP6To4IP6
+             , testProperty "fc00::1:2:3:4:5:6 is in the 'Unique Local' range" $
+                 ip6Range (ip6FromWords 0xFC00 0 1 2 3 4 5 6) ==
+                   UniqueLocalIP6
+             , testProperty "fdff::1:2:3:4:5:6 is in the 'Unique Local' range" $
+                 ip6Range (ip6FromWords 0xFDFF 0 1 2 3 4 5 6) ==
+                   UniqueLocalIP6
+             , testProperty "fe00::1:2:3:4:5:6 is in the 'General' range" $
+                 ip6Range (ip6FromWords 0xFE00 0 1 2 3 4 5 6) ==
+                   GeneralIP6
+             , testProperty "fe80::1:2:3:4:5:6 is in the 'Link Local' range" $
+                 ip6Range (ip6FromWords 0xFE80 0 1 2 3 4 5 6) ==
+                   LinkLocalIP6
+             , testProperty "febf::1:2:3:4:5:6 is in the 'Link Local' range" $
+                 ip6Range (ip6FromWords 0xFEBF 0 1 2 3 4 5 6) ==
+                   LinkLocalIP6
+             , testProperty "fec0::1:2:3:4:5:6 is in the 'General' range" $
+                 ip6Range (ip6FromWords 0xFEC0 0 1 2 3 4 5 6) ==
+                   GeneralIP6
+             , testProperty "fe00::1:2:3:4:5:6 is in the 'General' range" $
+                 ip6Range (ip6FromWords 0xFE00 0 1 2 3 4 5 6) ==
+                   GeneralIP6
+             , testProperty "ff00::1:2:3:4:5:6 is in the 'Multicast' range" $
+                 ip6Range (ip6FromWords 0xFF00 0 1 2 3 4 5 6) ==
+                   MulticastIP6
+             , testProperty "ffff::1:2:3:4:5:6 is in the 'Multicast' range" $
+                 ip6Range (ip6FromWords 0xFFFF 0 1 2 3 4 5 6) ==
+                   MulticastIP6
              ]
          , testGroup "IP"
              [ testProperty "show -> read" $ \a →
