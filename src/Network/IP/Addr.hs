@@ -88,9 +88,9 @@ import Data.Serialize (Serialize)
 import qualified Data.Serialize as S
 import Text.Printer (Printer, (<>))
 import qualified Text.Printer as P
-import qualified Text.Printer.Numerals as P
+import qualified Text.Printer.Integral as P
 import Data.Textual
-import Data.Textual.Numerals hiding (Binary)
+import Data.Textual.Integral hiding (Binary)
 import Text.Parser.Combinators ((<?>), try)
 import Text.Parser.Char (CharParsing)
 import qualified Text.Parser.Char as PC
