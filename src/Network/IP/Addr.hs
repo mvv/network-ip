@@ -74,7 +74,6 @@ module Network.IP.Addr
 
 import Prelude hiding (print)
 import Data.Typeable (Typeable, Typeable1)
-import Data.Proxy (Proxy(..))
 import Data.Word
 import Data.Bits
 import Data.DoubleWord (BinaryWord(..), DoubleWord(..), Word128)
@@ -95,6 +94,7 @@ import Text.Parser.Combinators ((<?>), try)
 import Text.Parser.Char (CharParsing)
 import qualified Text.Parser.Char as PC
 import Text.Printf (printf)
+import Type.Hint
 import Control.Applicative
 import Control.Monad (void, when)
 import Foreign.Ptr (castPtr)
