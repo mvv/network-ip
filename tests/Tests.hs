@@ -143,38 +143,40 @@ main = defaultMain $ testGroup "Tests"
              , testProperty "ip4Range" $ \a →
                  let r = ip4Range a in
                    if | inNetwork a (net4Addr anyIP4 8)
-                      → r == ThisHostIP4
+                        → r == ThisHostIP4
                       | inNetwork a (net4Addr (ip4FromOctets 10 0 0 0) 8) ||
-                        inNetwork a (net4Addr (ip4FromOctets 172 16 0 0) 12) ||
+                        inNetwork a
+                          (net4Addr (ip4FromOctets 172 16 0 0) 12) ||
                         inNetwork a (net4Addr (ip4FromOctets 192 168 0 0) 16)
-                      → r == PrivateUseIP4
+                        → r == PrivateUseIP4
                       | inNetwork a (net4Addr (ip4FromOctets 100 64 0 0) 10)
-                      → r == SharedSpaceIP4
+                        → r == SharedSpaceIP4
                       | inNetwork a (net4Addr (ip4FromOctets 127 0 0 0) 8)
-                      → r == LoopbackIP4
+                        → r == LoopbackIP4
                       | inNetwork a (net4Addr (ip4FromOctets 169 254 0 0) 16)
-                      → r == LinkLocalIP4
+                        → r == LinkLocalIP4
                       | inNetwork a (net4Addr (ip4FromOctets 192 0 0 0) 24)
-                      → if inNetwork a (net4Addr (ip4FromOctets 192 0 0 0) 29)
-                        then r == DSLiteIP4
-                        else r == ReservedIP4
+                        → if inNetwork a
+                               (net4Addr (ip4FromOctets 192 0 0 0) 29)
+                          then r == DSLiteIP4
+                          else r == ReservedIP4
                       | inNetwork a (net4Addr (ip4FromOctets 192 0 2 0) 24) ||
                         inNetwork a
                           (net4Addr (ip4FromOctets 198 51 100 0) 24) ||
                         inNetwork a (net4Addr (ip4FromOctets 203 0 113 0) 24)
-                      → r == DocumentationIP4
+                        → r == DocumentationIP4
                       | inNetwork a (net4Addr (ip4FromOctets 192 88 99 0) 24)
-                      → r == IP6To4IP4
+                        → r == IP6To4IP4
                       | inNetwork a (net4Addr (ip4FromOctets 198 18 0 0) 15)
-                      → r == BenchmarkingIP4
+                        → r == BenchmarkingIP4
                       | inNetwork a (net4Addr (ip4FromOctets 224 0 0 0) 4)
-                      → r == MulticastIP4
+                        → r == MulticastIP4
                       | inNetwork a (net4Addr (ip4FromOctets 240 0 0 0) 4)
-                      → if a == broadcastIP4
-                        then r == BroadcastIP4
-                        else r == FutureUseIP4
+                        → if a == broadcastIP4
+                          then r == BroadcastIP4
+                          else r == FutureUseIP4
                       | otherwise
-                      → r == GeneralIP4
+                        → r == GeneralIP4
              ]
          , testGroup "IP6"
              [ testProperty "show -> read" $ \a →
@@ -304,47 +306,48 @@ main = defaultMain $ testGroup "Tests"
              , testProperty "ip6Range" $ \a →
                  let r = ip6Range a in
                    if | a == anyIP6
-                      → r == AnyIP6
+                        → r == AnyIP6
                       | a == loopbackIP6
-                      → r == LoopbackIP6 
+                        → r == LoopbackIP6 
                       | inNetwork a
                           (net6Addr (ip6FromWords 0 0 0 0xFFFF 0 0 0 0) 96)
-                      → r == IP4MappedIP6
+                        → r == IP4MappedIP6
                       | inNetwork a
                           (net6Addr (ip6FromWords 0x100 0 0 0 0 0 0 0) 64)
-                      → r == DiscardIP6
+                        → r == DiscardIP6
                       | inNetwork a
                           (net6Addr (ip6FromWords 0x64 0xFF9B 0 0 0 0 0 0) 96)
-                      → r == IP4EmbeddedIP6
+                        → r == IP4EmbeddedIP6
                       | inNetwork a
                           (net6Addr (ip6FromWords 0x2001 0 0 0 0 0 0 0) 23)
-                      → if inNetwork a
-                             (net6Addr (ip6FromWords 0x2001 0 0 0 0 0 0 0) 32)
-                        then r == TeredoIP6
-                        else
-                          if inNetwork a
+                        → if inNetwork a
                                (net6Addr
-                                  (ip6FromWords 0x2001 0x10 0 0 0 0 0 0) 28)
-                          then r == OrchidIP6
-                          else r == ReservedIP6
+                                  (ip6FromWords 0x2001 0 0 0 0 0 0 0) 32)
+                          then r == TeredoIP6
+                          else
+                            if inNetwork a
+                                 (net6Addr
+                                    (ip6FromWords 0x2001 0x10 0 0 0 0 0 0) 28)
+                            then r == OrchidIP6
+                            else r == ReservedIP6
                       | inNetwork a
                           (net6Addr
                              (ip6FromWords 0x2001 0xDB8 0 0 0 0 0 0) 32)
-                      → r == DocumentationIP6
+                        → r == DocumentationIP6
                       | inNetwork a
                           (net6Addr (ip6FromWords 0x2002 0 0 0 0 0 0 0) 16)
-                      → r == IP6To4IP6
+                        → r == IP6To4IP6
                       | inNetwork a
                           (net6Addr (ip6FromWords 0xFC00 0 0 0 0 0 0 0) 7)
-                      → r == UniqueLocalIP6
+                        → r == UniqueLocalIP6
                       | inNetwork a
                           (net6Addr (ip6FromWords 0xFE80 0 0 0 0 0 0 0) 10)
-                      → r == LinkLocalIP6
+                        → r == LinkLocalIP6
                       | inNetwork a
                           (net6Addr (ip6FromWords 0xFF00 0 0 0 0 0 0 0) 8)
-                      → r == MulticastIP6
+                        → r == MulticastIP6
                       | otherwise
-                      → r == GeneralIP6
+                        → r == GeneralIP6
              ]
          , testGroup "IP"
              [ testProperty "show -> read" $ \a →
