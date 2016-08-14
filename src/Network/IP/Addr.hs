@@ -15,8 +15,8 @@
 -- | Internet Protocol addressing.
 module Network.IP.Addr
   ( 
-    -- * Host address
-    -- ** IPv4 address
+  -- * Host address
+  -- ** IPv4 address
     IP4(..)
   , anIP4
   , ip4ToOctets
@@ -28,7 +28,7 @@ module Network.IP.Addr
   , broadcastIP4
   , Range4(..)
   , ip4Range
-    -- ** IPv6 address
+  -- ** IPv6 address
   , IP6(..)
   , anIP6
   , ip6ToWords
@@ -39,8 +39,11 @@ module Network.IP.Addr
   , loopbackIP6
   , Range6(..)
   , ip6Range
-    -- ** IP address
-  , IP(..)
+  -- ** IP address
+  , IP46(..)
+  , anIP46
+  , anIP46Of
+  , IP
   , anIP
   -- * Network address
   , IsNetAddr(..)
@@ -54,10 +57,14 @@ module Network.IP.Addr
   , aNetAddrIP
   , net4Addr
   , net6Addr
+  , toNetAddr46
+  , fromNetAddr46
   , printNetAddr
   , net4Parser
   , net6Parser
   , netParser
+  , putNetAddr
+  , getNetAddr
   -- * Port number
   , InetPort(..)
   , anInetPort
@@ -70,10 +77,13 @@ module Network.IP.Addr
   , anInet4Addr
   , anInet6Addr
   , anInetAddrIP
+  , toInetAddr46
+  , fromInetAddr46
   ) where
 
 import Prelude hiding (print)
 import Data.Typeable (Typeable, Typeable1)
+import Data.Data (Data)
 import Data.Word
 import Data.Bits
 import Data.DoubleWord (BinaryWord(..), DoubleWord(..), Word128)
@@ -81,10 +91,10 @@ import Data.Ix (Ix)
 import Data.Endian
 import Data.Default.Class
 import Data.Hashable
-import Data.Binary (Binary)
-import qualified Data.Binary as B
-import Data.Serialize (Serialize)
-import qualified Data.Serialize as S
+import Data.Serializer (Serializer, Serializable, SizedSerializable)
+import qualified Data.Serializer as S
+import Data.Deserializer (Deserializer, Deserializable)
+import qualified Data.Deserializer as D
 import Text.Printer (Printer, (<>))
 import qualified Text.Printer as P
 import qualified Text.Printer.Integral as P
@@ -102,8 +112,7 @@ import Foreign.Storable (Storable(..))
 
 -- | IPv4 address.
 newtype IP4 = IP4 { unIP4 ∷ Word32 }
-  deriving (Typeable, Eq, Ord, Bounded, Enum, Ix, Num, Bits, Hashable,
-            Binary, Serialize)
+  deriving (Typeable, Data, Eq, Ord, Bounded, Enum, Ix, Num, Bits, Hashable)
 
 -- | 'IP4' proxy value.
 anIP4 ∷ Proxy IP4
@@ -152,6 +161,18 @@ instance Storable IP4 where
   sizeOf _    = 4
   peek p      = IP4 . fromBigEndian <$> peek (castPtr p)
   poke p      = poke (castPtr p) . toBigEndian . unIP4
+
+instance Serializable IP4 where
+  put = S.word32B . unIP4
+  {-# INLINE put #-}
+
+instance SizedSerializable IP4 where
+  size _ = 4
+  {-# INLINE size #-}
+
+instance Deserializable IP4 where
+  get = IP4 <$> D.word32B <?> "IPv4 address"
+  {-# INLINE get #-}
 
 -- | The octets of an IPv4 address.
 ip4ToOctets ∷ IP4 → (Word8, Word8, Word8, Word8)
@@ -217,7 +238,7 @@ data Range4 = GeneralIP4       -- ^ General IPv4 address.
             | MulticastIP4     -- ^ Multicast address.
             | FutureUseIP4     -- ^ Future use.
             | BroadcastIP4     -- ^ Limited broadcast.
-            deriving (Typeable, Show, Read, Eq, Ord, Enum)
+            deriving (Typeable, Data, Show, Read, Eq, Ord, Enum)
 
 -- | Determine the address range type.
 ip4Range ∷ IP4 → Range4
@@ -251,7 +272,7 @@ ip4Range addr = case w1 of
 
 -- | IPv6 address.
 newtype IP6 = IP6 { unIP6 ∷ Word128 }
-  deriving (Typeable, Eq, Ord, Bounded, Enum, Ix, Num, Bits, Hashable)
+  deriving (Typeable, Data, Eq, Ord, Bounded, Enum, Ix, Num, Bits, Hashable)
 
 -- | 'IP6' proxy value.
 anIP6 ∷ Proxy IP6
@@ -350,17 +371,16 @@ instance Storable IP6 where
     poke (castPtr p) $ toBigEndian $ hiWord w
     poke (castPtr p) $ toBigEndian $ loWord w
 
-instance Binary IP6 where
-  get = fmap IP6 $ fromHiAndLo <$> B.get <*> B.get
-  put (IP6 w) = do
-    B.put $ hiWord w
-    B.put $ loWord w
+instance Serializable IP6 where
+  put (IP6 w) = S.word64B (hiWord w) <> S.word64B (loWord w)
+  {-# INLINE put #-}
 
-instance Serialize IP6 where
-  get = fmap IP6 $ fromHiAndLo <$> S.get <*> S.get
-  put (IP6 w) = do
-    S.put $ hiWord w
-    S.put $ loWord w
+instance SizedSerializable IP6 where
+  size _ = 16
+  {-# INLINE size #-}
+
+instance Deserializable IP6 where
+  get = fmap IP6 $ fromHiAndLo <$> D.get <*> D.get <?> "IPv6 address"
 
 -- | The 16-bit pieces of an IPv6 address.
 ip6ToWords ∷ IP6 → (Word16, Word16, Word16, Word16,
@@ -446,7 +466,7 @@ data Range6 = GeneralIP6       -- ^ General IPv6 address.
             | UniqueLocalIP6   -- ^ Unique local address.
             | LinkLocalIP6     -- ^ Link local address.
             | MulticastIP6     -- ^ Multicast address.
-            deriving (Typeable, Show, Read, Eq, Ord, Enum)
+            deriving (Typeable, Data, Show, Read, Eq, Ord, Enum)
 
 -- | Determine the address range type.
 ip6Range ∷ IP6 → Range6
@@ -480,10 +500,21 @@ ip6Range (IP6 w) = case hi of
         w2 = loWord q1
         w3 = hiWord q2
 
--- IP address.
-data IP = IPv4 {-# UNPACK #-} !IP4
-        | IPv6 {-# UNPACK #-} !IP6
-        deriving (Typeable, Eq, Ord, Show, Read)
+-- | IPv4- or IPv6-specific data.
+data IP46 t₄ t₆ = IPv4 t₄
+                | IPv6 t₆
+                deriving (Typeable, Data, Eq, Ord, Show, Read)
+
+-- | 'IP46' proxy value.
+anIP46 ∷ Proxy IP46
+anIP46 = Proxy
+
+-- | 'IP46' /t₄/ /t₆/ proxy value.
+anIP46Of ∷ Proxy t₄ → Proxy t₆ → Proxy (IP46 t₄ t₆)
+anIP46Of _ _ = Proxy
+
+-- | IP address.
+type IP = IP46 IP4 IP6
 
 -- | 'IP' proxy value.
 anIP ∷ Proxy IP
@@ -498,15 +529,12 @@ instance Textual IP where
   textual = try (IPv4 <$> textual) <|> (IPv6 <$> textual)
   {-# INLINABLE textual #-}
 
-instance Binary IP where
-  get = B.get >>= return . either IPv4 IPv6
-  put (IPv4 a) = B.put (Left a ∷ Either IP4 IP6)
-  put (IPv6 a) = B.put (Right a ∷ Either IP4 IP6)
-
-instance Serialize IP where
-  get = S.get >>= return . either IPv4 IPv6
+instance Serializable IP where
   put (IPv4 a) = S.put (Left a ∷ Either IP4 IP6)
   put (IPv6 a) = S.put (Right a ∷ Either IP4 IP6)
+
+instance Deserializable IP where
+  get = D.get >>= return . either IPv4 IPv6 <?> "IP address"
 
 -- | Network address.
 class IsNetAddr n where
@@ -531,11 +559,17 @@ class IsNetAddr n where
             → n         -- ^ Network address
             → Bool
 
--- | Network address: host address + network mask length.
+-- | Network address: host address + network prefix length.
 data NetAddr a = NetAddr a {-# UNPACK #-} !Word8
-                 deriving (Typeable, Eq)
+                 deriving Eq
 
+deriving instance Typeable1 InetAddr
+deriving instance Data a ⇒ Data (NetAddr a)
+
+-- | IPv4 network address.
 type Net4Addr = NetAddr IP4
+
+-- | IPv6 network address.
 type Net6Addr = NetAddr IP6
 
 -- | 'NetAddr' proxy value.
@@ -602,29 +636,25 @@ instance Textual (NetAddr IP) where
   textual = netParser
   {-# INLINE textual #-}
 
-instance Binary Net4Addr where
-  get = netAddr <$> B.get <*> B.get
-  put (NetAddr a w) = B.put a >> B.put w
+instance Serializable a ⇒ Serializable (NetAddr a) where
+  put (NetAddr a w) = S.put a <> S.put w
+  {-# INLINE put #-}
 
-instance Binary Net6Addr where
-  get = netAddr <$> B.get <*> B.get
-  put (NetAddr a w) = B.put a >> B.put w
+instance SizedSerializable a ⇒ SizedSerializable (NetAddr a) where
+  size _ = S.size (Proxy ∷ Proxy a) + 1
+  {-# INLINE size #-}
 
-instance Binary (NetAddr IP) where
-  get = netAddr <$> B.get <*> B.get
-  put (NetAddr a w) = B.put a >> B.put w
+instance Deserializable Net4Addr where
+  get = getNetAddr <?> "IPv4 network address"
+  {-# INLINE get #-}
 
-instance Serialize Net4Addr where
-  get = netAddr <$> S.get <*> S.get
-  put (NetAddr a w) = S.put a >> S.put w
+instance Deserializable Net6Addr where
+  get = getNetAddr <?> "IPv6 network address"
+  {-# INLINE get #-}
 
-instance Serialize Net6Addr where
-  get = netAddr <$> S.get <*> S.get
-  put (NetAddr a w) = S.put a >> S.put w
-
-instance Serialize (NetAddr IP) where
-  get = netAddr <$> S.get <*> S.get
-  put (NetAddr a w) = S.put a >> S.put w
+instance Deserializable (NetAddr IP) where
+  get = getNetAddr <?> "IP network address"
+  {-# INLINE get #-}
 
 instance IsNetAddr Net4Addr where
   type NetHost Net4Addr = IP4
@@ -702,13 +732,27 @@ instance IsNetAddr (NetAddr IP) where
     where l = 128 - fromIntegral w
   inNetwork _ _ = False
 
+-- | An alias for 'netAddr'.
 net4Addr ∷ IP4 → Word8 → Net4Addr
 net4Addr = netAddr
 {-# INLINE net4Addr #-}
 
+-- | An alias for 'netAddr'.
 net6Addr ∷ IP6 → Word8 → Net6Addr
 net6Addr = netAddr
 {-# INLINE net6Addr #-}
+
+-- | Pull 'IP46' from a 'NetAddr'.
+toNetAddr46 ∷ NetAddr IP → IP46 (NetAddr IP4) (NetAddr IP6)
+toNetAddr46 (NetAddr (IPv4 a) w) = IPv4 (NetAddr a w)
+toNetAddr46 (NetAddr (IPv6 a) w) = IPv6 (NetAddr a w)
+{-# INLINABLE toNetAddr46 #-}
+
+-- | Push 'IP46' into a 'NetAddr'.
+fromNetAddr46 ∷ IP46 (NetAddr IP4) (NetAddr IP6) → NetAddr IP
+fromNetAddr46 (IPv4 (NetAddr a w)) = NetAddr (IPv4 a) w
+fromNetAddr46 (IPv6 (NetAddr a w)) = NetAddr (IPv6 a) w
+{-# INLINABLE fromNetAddr46 #-}
 
 -- | Print network address (CIDR notation).
 printNetAddr ∷ (IsNetAddr n, Printable (NetHost n), Printer p) ⇒ n → p
@@ -750,10 +794,22 @@ netParser = (<?> "IP network address") $ do
     mask (IPv4 _) = ip4Mask
     mask (IPv6 _) = ip6Mask
 
+-- | Serialize a network address (host address followed by 8-bit
+--   prefix length).
+putNetAddr ∷ (IsNetAddr n, Serializable (NetHost n), Serializer s) ⇒ n → s
+putNetAddr n = S.put (netHost n) <> S.put (netPrefix n)
+{-# INLINE putNetAddr #-}
+
+-- | Deserialize a network address (host address followed by 8-bit
+--   prefix length).
+getNetAddr ∷ (IsNetAddr n, Deserializable (NetHost n), Deserializer μ) ⇒ μ n
+getNetAddr = netAddr <$> D.get <*> D.get
+{-# INLINE getNetAddr #-}
+
 -- | Port number.
 newtype InetPort = InetPort { unInetPort ∷ Word16 }
-  deriving (Typeable, Eq, Ord, Bounded, Enum, Ix, Num, Real, Integral, Bits,
-            Hashable, Binary, Serialize, Printable)
+  deriving (Typeable, Data, Eq, Ord, Bounded, Enum, Ix, Num, Real, Integral,
+            Bits, Hashable, Printable)
 
 -- | 'InetPort' proxy value.
 anInetPort ∷ Proxy InetPort
@@ -761,7 +817,7 @@ anInetPort = Proxy
 
 instance Show InetPort where
   showsPrec p (InetPort w) = showsPrec p w
-  {-# INLINE show #-}
+  {-# INLINE showsPrec #-}
 
 instance Read InetPort where
   readsPrec p = fmap (\(w, s) → (InetPort w, s)) . readsPrec p
@@ -776,14 +832,30 @@ instance Storable InetPort where
   peek p      = InetPort . fromBigEndian <$> peek (castPtr p)
   poke p      = poke (castPtr p) . toBigEndian . unInetPort
 
+instance Serializable InetPort where
+  put = S.word16B . unInetPort
+  {-# INLINE put #-}
+
+instance SizedSerializable InetPort where
+  size _ = 2
+  {-# INLINE size #-}
+
+instance Deserializable InetPort where
+  get = InetPort <$> D.word16B <?> "port number"
+  {-# INLINE get #-}
+
 -- | Socket address: host address + port number.
 data InetAddr a = InetAddr { inetHost ∷ a
                            , inetPort ∷ {-# UNPACK #-} !InetPort
                            } deriving (Eq, Ord, Show, Read)
 
 deriving instance Typeable1 InetAddr
+deriving instance Data a ⇒ Data (InetAddr a)
 
+-- | IPv4 socket address.
 type Inet4Addr = InetAddr IP4
+
+-- | IPv6 socket address.
 type Inet6Addr = InetAddr IP6
 
 -- | 'InetAddr' proxy value.
@@ -852,11 +924,26 @@ instance Hashable a ⇒ Hashable (InetAddr a) where
   {-# INLINE hash #-}
 #endif
 
-instance Binary a ⇒ Binary (InetAddr a) where
-  get = InetAddr <$> B.get <*> B.get
-  put (InetAddr a p) = B.put a >> B.put p
+instance Serializable a ⇒ Serializable (InetAddr a) where
+  put (InetAddr a p) = S.put a <> S.put p
+  {-# INLINE put #-}
 
-instance Serialize a ⇒ Serialize (InetAddr a) where
-  get = InetAddr <$> S.get <*> S.get
-  put (InetAddr a p) = S.put a >> S.put p
+instance SizedSerializable a ⇒ SizedSerializable (InetAddr a) where
+  size _ = S.size (Proxy ∷ Proxy a) + 2
+  {-# INLINE size #-}
 
+instance Deserializable a ⇒ Deserializable (InetAddr a) where
+  get = InetAddr <$> (D.get <?> "host address") <*> D.get <?> "socket address"
+  {-# INLINE get #-}
+
+-- | Pull 'IP46' from an 'InetAddr'.
+toInetAddr46 ∷ InetAddr IP → IP46 (InetAddr IP4) (InetAddr IP6)
+toInetAddr46 (InetAddr (IPv4 a) w) = IPv4 (InetAddr a w)
+toInetAddr46 (InetAddr (IPv6 a) w) = IPv6 (InetAddr a w)
+{-# INLINABLE toInetAddr46 #-}
+
+-- | Push 'IP46' into an 'InetAddr'.
+fromInetAddr46 ∷ IP46 (InetAddr IP4) (InetAddr IP6) → InetAddr IP
+fromInetAddr46 (IPv4 (InetAddr a w)) = InetAddr (IPv4 a) w
+fromInetAddr46 (IPv6 (InetAddr a w)) = InetAddr (IPv6 a) w
+{-# INLINABLE fromInetAddr46 #-}
