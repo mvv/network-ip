@@ -14,7 +14,7 @@
 
 -- | Internet Protocol addressing.
 module Network.IP.Addr
-  ( 
+  (
   -- * Host address
   -- ** IPv4 address
     IP4(..)
@@ -82,7 +82,10 @@ module Network.IP.Addr
   ) where
 
 import Prelude hiding (print)
-import Data.Typeable (Typeable, Typeable1)
+import Data.Typeable (Typeable)
+#if !MIN_VERSION_base(4,10,0)
+import Data.Typeable (Typeable1)
+#endif
 import Data.Data (Data)
 import Data.Word
 import Data.Bits
@@ -131,7 +134,7 @@ instance Show IP4 where
     where (o1, o2, o3, o4) = ip4ToOctets a
 
 instance Read IP4 where
-  readsPrec p = readParen (p > 10) $ \i → 
+  readsPrec p = readParen (p > 10) $ \i →
                   [ (ip4FromOctets o1 o2 o3 o4, i4)
                   | ("ip4FromOctets", i') ← lex i
                   , (o1, i1) ← readsPrec 11 i'
@@ -288,7 +291,7 @@ instance Show IP6 where
       (w1, w2, w3, w4, w5, w6, w7, w8) = ip6ToWords a
 
 instance Read IP6 where
-  readsPrec p = readParen (p > 10) $ \i → 
+  readsPrec p = readParen (p > 10) $ \i →
                   [ (ip6FromWords w1 w2 w3 w4 w5 w6 w7 w8, i8)
                   | ("ip6FromWords", i') ← lex i
                   , (w1, i1) ← readsPrec 11 i'
@@ -331,7 +334,7 @@ instance Textual IP6 where
               Nothing → do
                 w ← word
                 before 7 (fromIntegral w)
-    where 
+    where
       word = nnUpTo Hexadecimal 4 `hintTypeArg` aWord16 <?> "word"
       before 0 w = return $ IP6 w
       before 1 w = do
@@ -484,7 +487,7 @@ ip6Range (IP6 w) = case hi of
                  2     → if w3 == 0 then BenchmarkingIP6 else GeneralIP6
                  0xDB8 → DocumentationIP6
                  _     | w2 .&. 0xFFF0 == 0x10 → OrchidIP6
-                       | w2 .&. 0xFE00 == 0    → ReservedIP6 
+                       | w2 .&. 0xFE00 == 0    → ReservedIP6
                        | otherwise             → GeneralIP6
       0x2002 → IP6To4IP6
       _      | w1 .&. 0xFE00 == 0xFC00 → UniqueLocalIP6
@@ -563,7 +566,10 @@ class IsNetAddr n where
 data NetAddr a = NetAddr a {-# UNPACK #-} !Word8
                  deriving Eq
 
+#if !MIN_VERSION_base(4,10,0)
 deriving instance Typeable1 InetAddr
+#endif
+
 deriving instance Data a ⇒ Data (NetAddr a)
 
 -- | IPv4 network address.
@@ -849,7 +855,11 @@ data InetAddr a = InetAddr { inetHost ∷ a
                            , inetPort ∷ {-# UNPACK #-} !InetPort
                            } deriving (Eq, Ord, Show, Read)
 
+
+#if !MIN_VERSION_base(4,10,0)
 deriving instance Typeable1 InetAddr
+#endif
+
 deriving instance Data a ⇒ Data (InetAddr a)
 
 -- | IPv4 socket address.
