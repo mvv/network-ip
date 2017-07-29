@@ -15,6 +15,11 @@ Copyright: 2011-2016 Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
 License: BSD3
 License-File: LICENSE
 
+Extra-Source-Files:
+  README.md
+
+Tested-With: GHC==7.6.3, GHC==7.8.4, GHC==7.10.3, GHC==8.0.2, GHC==8.2.1
+
 Cabal-Version: >= 1.10.0
 Build-Type: Simple
 
