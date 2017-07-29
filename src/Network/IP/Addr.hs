@@ -82,7 +82,10 @@ module Network.IP.Addr
   ) where
 
 import Prelude hiding (print)
-import Data.Typeable (Typeable, Typeable1)
+import Data.Typeable (Typeable)
+#if !MIN_VERSION_base(4,10,0)
+import Data.Typeable (Typeable1)
+#endif
 import Data.Data (Data)
 import Data.Word
 import Data.Bits
@@ -563,7 +566,9 @@ class IsNetAddr n where
 data NetAddr a = NetAddr a {-# UNPACK #-} !Word8
                  deriving Eq
 
+#if !MIN_VERSION_base(4,10,0)
 deriving instance Typeable1 NetAddr
+#endif
 deriving instance Data a ⇒ Data (NetAddr a)
 
 -- | IPv4 network address.
@@ -849,7 +854,10 @@ data InetAddr a = InetAddr { inetHost ∷ a
                            , inetPort ∷ {-# UNPACK #-} !InetPort
                            } deriving (Eq, Ord, Show, Read)
 
+
+#if !MIN_VERSION_base(4,10,0)
 deriving instance Typeable1 InetAddr
+#endif
 deriving instance Data a ⇒ Data (InetAddr a)
 
 -- | IPv4 socket address.
