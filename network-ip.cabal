@@ -1,5 +1,5 @@
 Name: network-ip
-Version: 0.3
+Version: 0.3.0.1
 Category: Network
 Stability: experimental
 Synopsis: Internet Protocol data structures
@@ -14,6 +14,11 @@ Maintainer: Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
 Copyright: 2011-2016 Mikhail Vorozhtsov <mikhail.vorozhtsov@gmail.com>
 License: BSD3
 License-File: LICENSE
+
+Extra-Source-Files:
+  README.md
+
+Tested-With: GHC==7.10.3, GHC==8.0.2, GHC==8.2.1
 
 Cabal-Version: >= 1.10.0
 Build-Type: Simple
