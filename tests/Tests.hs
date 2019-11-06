@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE UnicodeSyntax #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -11,7 +12,9 @@ import Test.Tasty.QuickCheck
 import Data.DoubleWord
 import Data.Textual
 import Network.IP.Addr
+#if !MIN_VERSION_base(4,8,0)
 import Control.Applicative
+#endif
 
 instance Arbitrary IP4 where
   arbitrary = IP4 <$> arbitrary

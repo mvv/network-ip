@@ -98,7 +98,10 @@ import Data.Serializer (Serializer, Serializable, SizedSerializable)
 import qualified Data.Serializer as S
 import Data.Deserializer (Deserializer, Deserializable)
 import qualified Data.Deserializer as D
-import Text.Printer (Printer, (<>))
+import Text.Printer (Printer)
+#if !MIN_VERSION_base(4,13,0)
+import Text.Printer ((<>))
+#endif
 import qualified Text.Printer as P
 import qualified Text.Printer.Integral as P
 import Data.Textual
@@ -156,7 +159,7 @@ instance Textual IP4 where
     where octet = (<?> "IPv4 octet") $ do
             o ← nnUpTo Decimal 3
             if o > 255
-              then fail "out of bounds"
+              then D.unexpected "out of bounds"
               else return $ fromIntegral (o ∷ Int)
 
 instance Storable IP4 where
@@ -767,7 +770,7 @@ printNetAddr n = print (netHost n) <> P.char7 '/' <> print (netLength n)
 ip4Mask ∷ (CharParsing μ, Monad μ) ⇒ μ Word8
 ip4Mask = (<?> "network prefix length") $ do
   m ← nncUpTo Decimal 2
-  when (m > 32) $ fail "out of bounds"
+  when (m > 32) $ D.unexpected "out of bounds"
   return m
 
 -- | IPv4 network address parser (CIDR notation).
@@ -779,7 +782,7 @@ net4Parser  =  netAddr <$> textual <*> (PC.char '/' *> ip4Mask)
 ip6Mask ∷ (CharParsing μ, Monad μ) ⇒ μ Word8
 ip6Mask = (<?> "network prefix length") $ do
   m ← nncUpTo Decimal 3
-  when (m > (128 ∷ Int)) $ fail "out of bounds"
+  when (m > (128 ∷ Int)) $ D.unexpected "out of bounds"
   return $ fromIntegral m
 
 -- | IPv6 network address parser (CIDR notation).
